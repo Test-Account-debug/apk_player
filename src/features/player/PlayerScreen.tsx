@@ -1,4 +1,4 @@
-import { useActiveTrack, usePlaybackState, useProgress, State, TrackPlayer } from "react-native-track-player";
+import TrackPlayer, { useActiveTrack, usePlaybackState, useProgress, State } from "react-native-track-player";
 import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";

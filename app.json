@@ -1,0 +1,17 @@
+{
+  "expo": {
+    "name": "Auralith",
+    "slug": "auralith",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "auralith",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": false,
+    "android": {
+      "package": "com.auralith.player"
+    },
+    "plugins": [
+      "expo-secure-store"
+    ]
+  }
+}

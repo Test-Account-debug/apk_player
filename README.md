@@ -2,13 +2,13 @@
 
 ## Auralith mobile foundation
 
-This repository currently contains the TypeScript feature modules, not a generated Expo app. Create an Expo TypeScript app (or copy these modules into one), then install the native dependencies below. `react-native-track-player` and Android audio effects require an Expo development build; Expo Go is not sufficient.
+This repository contains an Expo SDK 52 TypeScript app scaffold. Install dependencies with pnpm, then build a custom Android development client. `react-native-track-player` and Android audio effects require that development build; Expo Go is not sufficient.
 
 ```sh
-npx expo install expo-dev-client expo-blur expo-linear-gradient expo-web-browser expo-auth-session expo-secure-store react-native-webview @react-native-community/slider @expo/vector-icons
-npm install react-native-track-player
-npx expo prebuild
-npx expo run:android
+pnpm install
+pnpm dev
+pnpm prebuild
+pnpm run:android
 ```
 
 `react-native-webview` is included for other embedded web content; Spotify sign-in intentionally uses the system browser with PKCE, not an embedded WebView. Register the Spotify redirect URI shown by `makeRedirectUri({ scheme: "auralith" })` in the Spotify developer dashboard. Set the Spotify client ID in `src/shared/config/appConfig.ts`; a client ID is public, but never ship a client secret. Do not ship a shared Yandex token in the app bundle either: bundled values can be extracted, so obtain user authorization and keep user tokens in SecureStore. The requested `playlist-read-private` scope is used by `useSpotifyAuth` and is required before `parseSpotifyPlaylist` can read a private playlist.
@@ -38,4 +38,4 @@ Call `setupPlayer()` from `src/features/player/playerEngine.ts` before adding tr
 - These importers provide catalog metadata only. They do not grant rights to stream full tracks through Track Player. Keep provider tokens in SecureStore and obtain them through each provider's supported user-authorization flow.
 - `audioResolver.ts` accepts a licensed provider adapter. YouTube's supported APIs do not expose downloadable audio stream URLs; this project does not extract direct YouTube/YouTube Music streams. Use a provider that explicitly licenses playback and supplies an HTTPS stream.
 - `modules/audio-effects` implements the Expo Android module with Android `Equalizer` and `BassBoost`, mapping the five requested frequencies to each device's available bands. Pass the native session ID as `EqualizerScreen`'s `audioSessionId` prop. Track Player does not expose a stable public audio-session-ID API, so exposing that ID from the native player (or maintaining a small native fork) is required before effects can attach reliably. Until the session ID is connected, the equalizer UI remains visible but does not alter audio.
-- Expo config must include the `auralith` URL scheme and the Track Player config plugin required by the installed version. Rebuild the development client after native configuration changes.
+- Expo config includes the `auralith` URL scheme. RNTP 4.1.x is linked by React Native autolinking and does not ship an Expo config plugin; listing `react-native-track-player` in `plugins` makes Expo config resolution fail. Rebuild the development client after native configuration changes.
