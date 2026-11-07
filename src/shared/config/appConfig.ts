@@ -5,5 +5,6 @@ export const appConfig = {
   accentColor: "#ff007f",
   glassBlurOpacity: 0.15,
   spotifyClientId: "7a00552150bf49589ba9897d0bc73b9e",
-  yandexToken: "ВАШ_ТОКЕН",
+  jamendoClientId: "ВАШ_JAMENDO_CLIENT_ID",
+  tidalCountryCode: "US",
 } as const;

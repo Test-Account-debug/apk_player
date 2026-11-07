@@ -1,0 +1,92 @@
+diff --git a/android/proguard-rules.txt b/android/proguard-rules.txt
+index 1b5bf6f9bba6b898e686c141e23e8048cb8332ec..8c61a99293cea2635ecc702146058aac662a9915 100644
+--- a/android/proguard-rules.txt
++++ b/android/proguard-rules.txt
+@@ -1,3 +1,6 @@
+ 
+ # Ignore "not found" errors for libraries
+ -dontwarn com.google.android.exoplayer2.**
++-keepclassmembers class com.doublesymmetry.kotlinaudio.players.BaseAudioPlayer {
++	<fields>;
++}
+diff --git a/android/src/main/java/com/doublesymmetry/trackplayer/module/MusicModule.kt b/android/src/main/java/com/doublesymmetry/trackplayer/module/MusicModule.kt
+index b2409a09939164c49c0f7a16bb6d3284e8eab8fb..7ed41fea1a797e623783415374b0437d82f7526b 100644
+--- a/android/src/main/java/com/doublesymmetry/trackplayer/module/MusicModule.kt
++++ b/android/src/main/java/com/doublesymmetry/trackplayer/module/MusicModule.kt
+@@ -263,6 +263,16 @@ class MusicModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaM
+         callback.resolve(null)
+     }
+ 
++    @ReactMethod
++    fun getAudioSessionId(promise: Promise) {
++        if (verifyServiceBoundOrReject(promise)) return
++        try {
++            promise.resolve(musicService.audioSessionId)
++        } catch (error: Exception) {
++            promise.reject("audio_session_error", error.message, error)
++        }
++    }
++
+     @ReactMethod
+     fun add(data: ReadableArray?, insertBeforeIndex: Int, callback: Promise) = scope.launch {
+         if (verifyServiceBoundOrReject(callback)) return@launch
+diff --git a/android/src/main/java/com/doublesymmetry/trackplayer/service/MusicService.kt b/android/src/main/java/com/doublesymmetry/trackplayer/service/MusicService.kt
+index afa6b0f335714de0cc8741d5bbdd51b4e04bb3bb..ff4068c70a9b6142adf0e656d9b6f15687d60317 100644
+--- a/android/src/main/java/com/doublesymmetry/trackplayer/service/MusicService.kt
++++ b/android/src/main/java/com/doublesymmetry/trackplayer/service/MusicService.kt
+@@ -29,6 +29,7 @@ import com.doublesymmetry.trackplayer.module.MusicEvents
+ import com.doublesymmetry.trackplayer.module.MusicEvents.Companion.METADATA_PAYLOAD_KEY
+ import com.doublesymmetry.trackplayer.utils.BundleUtils
+ import com.doublesymmetry.trackplayer.utils.BundleUtils.setRating
++import com.google.android.exoplayer2.ExoPlayer
+ import com.facebook.react.HeadlessJsTaskService
+ import com.facebook.react.bridge.Arguments
+ import com.facebook.react.jstasks.HeadlessJsTaskConfig
+@@ -70,6 +71,20 @@ class MusicService : HeadlessJsTaskService() {
+     val state
+         get() = player.playerState
+ 
++    val audioSessionId: Int
++        get() {
++            if (!this::player.isInitialized) return 0
++            return try {
++                val field = Class
++                    .forName("com.doublesymmetry.kotlinaudio.players.BaseAudioPlayer")
++                    .getDeclaredField("exoPlayer")
++                    .apply { isAccessible = true }
++                (field.get(player) as? ExoPlayer)?.audioSessionId ?: 0
++            } catch (error: ReflectiveOperationException) {
++                throw IllegalStateException("Could not read the RNTP audio session ID", error)
++            }
++        }
++
+     var ratingType: Int
+         get() = player.ratingType
+         set(value) {
+diff --git a/lib/src/trackPlayer.d.ts b/lib/src/trackPlayer.d.ts
+index 8a6d0a92f3e4c204ae1281fad4225998f8e1eb74..ed10ebd461dd2e3699eacd5cf5fa931b2ee0fb72 100644
+--- a/lib/src/trackPlayer.d.ts
++++ b/lib/src/trackPlayer.d.ts
+@@ -12,6 +12,8 @@ import type { AddTrack, EventPayloadByEvent, NowPlayingMetadata, PlaybackState,
+  * @see https://rntp.dev/docs/api/functions/lifecycle
+  */
+ export declare function setupPlayer(options?: PlayerOptions): Promise<void>;
++/** Returns the Android audio session ID used by the underlying ExoPlayer instance. */
++export declare function getAudioSessionId(): Promise<number>;
+ /**
+  * Register the playback service. The service will run as long as the player runs.
+  */
+diff --git a/lib/src/trackPlayer.js b/lib/src/trackPlayer.js
+index 191e5dea7ce96f145d0a2ea16d9d925136ce4454..901cd09f73d888a4452eed23ed473cff88b88b55 100644
+--- a/lib/src/trackPlayer.js
++++ b/lib/src/trackPlayer.js
+@@ -32,6 +32,9 @@ function resolveImportedAsset(id) {
+ export async function setupPlayer(options = {}) {
+     return TrackPlayer.setupPlayer(options);
+ }
++export async function getAudioSessionId() {
++    return TrackPlayer.getAudioSessionId();
++}
+ /**
+  * Register the playback service. The service will run as long as the player runs.
+  */

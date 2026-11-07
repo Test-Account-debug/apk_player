@@ -5,7 +5,8 @@ export type SourcePlatform =
   | "youtubeMusic"
   | "deezer"
   | "soundcloud"
-  | "tidal";
+  | "tidal"
+  | "jamendo";
 
 export interface UniversalTrack {
   id: string;

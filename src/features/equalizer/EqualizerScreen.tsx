@@ -14,11 +14,18 @@ interface EqualizerScreenProps {
 export function EqualizerScreen({ audioSessionId }: EqualizerScreenProps) {
   const [levels, setLevels] = useState([0, 0, 0, 0, 0]);
   const [bassBoost, setBassBoost] = useState(false);
+  const [effectError, setEffectError] = useState<string | null>(null);
   const canControlAudio = isAudioEffectsAvailable && audioSessionId !== null;
 
   useEffect(() => {
     if (!isAudioEffectsAvailable || audioSessionId === null) return;
-    void audioEffects.attach(audioSessionId);
+    let active = true;
+    setEffectError(null);
+    void Promise.resolve(audioEffects.attach(audioSessionId)).catch((cause) => {
+      if (active) {
+        setEffectError(cause instanceof Error ? cause.message : "Unable to attach audio effects");
+      }
+    });
     return () => audioEffects.release();
   }, [audioSessionId]);
 
@@ -42,6 +49,7 @@ export function EqualizerScreen({ audioSessionId }: EqualizerScreenProps) {
             : "Android audio-effects module is not installed."}
         </Text>
       )}
+      {effectError ? <Text style={styles.effectError}>{effectError}</Text> : null}
       <View style={styles.bands}>
         {bands.map((label, index) => (
           <View key={label} style={styles.band}>
@@ -81,6 +89,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#071014", padding: 24, justifyContent: "center" },
   title: { color: "#f4ffff", fontSize: 20, fontWeight: "700", letterSpacing: 0, marginBottom: 8 },
   notice: { color: "#a5b6bb", fontSize: 13, marginBottom: 24 },
+  effectError: { color: appConfig.accentColor, fontSize: 12, marginBottom: 12 },
   bands: { flexDirection: "row", justifyContent: "space-between", minHeight: 230 },
   band: { alignItems: "center", flex: 1, minWidth: 0 },
   value: { color: appConfig.primaryColor, fontSize: 11, height: 18 },

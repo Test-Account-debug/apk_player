@@ -27,16 +27,18 @@ const tokenProviders: Array<{
   placeholder: string;
 }> = [
   { key: "appleMusic", title: "Apple Music Developer Token", placeholder: "Developer token" },
+  { key: "appleMusicUser", title: "Apple Music User Token (optional)", placeholder: "User token for library playlists" },
   { key: "yandexMusic", title: "Яндекс Музыка OAuth", placeholder: "OAuth token" },
   { key: "soundcloud", title: "SoundCloud Access Token", placeholder: "Access token" },
   { key: "tidal", title: "Tidal Bearer Token", placeholder: "Bearer token" },
-  { key: "deezer", title: "Deezer API", placeholder: "API token или App ID" },
+  { key: "deezer", title: "Deezer OAuth Access Token (optional)", placeholder: "Для ссылок на private playlist" },
 ];
 
 type TokenValues = Record<SecureTokenProvider, string>;
 
 const emptyTokens: TokenValues = {
   appleMusic: "",
+  appleMusicUser: "",
   yandexMusic: "",
   soundcloud: "",
   tidal: "",
@@ -159,8 +161,8 @@ export function SettingsScreen() {
 
         <BlurView intensity={38} tint="dark" style={styles.footerCard}>
           <View style={styles.footerCopy}>
-            <Text style={styles.footerTitle}>Powered by Liner Technology</Text>
-            <Text style={styles.footerSubtitle}>Оригинальный десктопный проект</Text>
+            <Text style={styles.footerTitle}>Desktop project reference</Text>
+            <Text style={styles.footerSubtitle}>Ссылка на исходный сайт, без аффилиации</Text>
           </View>
           <Pressable
             accessibilityRole="link"

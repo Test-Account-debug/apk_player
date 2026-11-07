@@ -2,6 +2,7 @@ import * as SecureStore from "expo-secure-store";
 
 export type SecureTokenProvider =
   | "appleMusic"
+  | "appleMusicUser"
   | "yandexMusic"
   | "soundcloud"
   | "tidal"

@@ -2,21 +2,23 @@ import { useEffect, useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { Ionicons } from "@expo/vector-icons";
-import TrackPlayer from "react-native-track-player";
+import TrackPlayer, { Event } from "react-native-track-player";
 
 import playbackService from "./src/features/player/PlaybackService";
 import { PlayerScreen } from "./src/features/player/PlayerScreen";
 import { setupPlayer } from "./src/features/player/playerEngine";
 import { EqualizerScreen } from "./src/features/equalizer/EqualizerScreen";
+import { ImportScreen } from "./src/screens/ImportScreen";
 import { SettingsScreen } from "./src/screens/SettingsScreen";
 import { appConfig } from "./src/shared/config/appConfig";
 
 TrackPlayer.registerPlaybackService(() => playbackService);
 
-type ScreenName = "player" | "equalizer" | "settings";
+type ScreenName = "player" | "import" | "equalizer" | "settings";
 
 const tabs: Array<{ key: ScreenName; label: string; icon: keyof typeof Ionicons.glyphMap }> = [
   { key: "player", label: "Плеер", icon: "musical-notes-outline" },
+  { key: "import", label: "Импорт", icon: "add-circle-outline" },
   { key: "equalizer", label: "Эквалайзер", icon: "options-outline" },
   { key: "settings", label: "Настройки", icon: "settings-outline" },
 ];
@@ -25,6 +27,7 @@ export default function App() {
   const [screen, setScreen] = useState<ScreenName>("player");
   const [playerReady, setPlayerReady] = useState(false);
   const [playerError, setPlayerError] = useState<string | null>(null);
+  const [audioSessionId, setAudioSessionId] = useState<number | null>(null);
   const [retry, setRetry] = useState(0);
 
   useEffect(() => {
@@ -42,6 +45,43 @@ export default function App() {
       active = false;
     };
   }, [retry]);
+
+  useEffect(() => {
+    if (!playerReady || screen !== "equalizer") return;
+    let active = true;
+    let sessionResolved = false;
+    const poll = setInterval(() => {
+      if (!sessionResolved) updateSessionId();
+    }, 500);
+    const updateSessionId = () => {
+      void TrackPlayer.getAudioSessionId()
+        .then((sessionId) => {
+          if (!active) return;
+          if (sessionId > 0) {
+            sessionResolved = true;
+            setAudioSessionId(sessionId);
+          } else {
+            setAudioSessionId(null);
+          }
+        })
+        .catch(() => {
+          if (active) setAudioSessionId(null);
+        });
+    };
+
+    updateSessionId();
+    const stateSubscription = TrackPlayer.addEventListener(Event.PlaybackState, updateSessionId);
+    const trackSubscription = TrackPlayer.addEventListener(
+      Event.PlaybackActiveTrackChanged,
+      updateSessionId,
+    );
+    return () => {
+      active = false;
+      clearInterval(poll);
+      stateSubscription.remove();
+      trackSubscription.remove();
+    };
+  }, [playerReady, screen]);
 
   if (!playerReady) {
     return (
@@ -71,8 +111,10 @@ export default function App() {
       <View style={styles.screen}>
         {screen === "player" ? (
           <PlayerScreen onOpenEqualizer={() => setScreen("equalizer")} />
+        ) : screen === "import" ? (
+          <ImportScreen onTrackQueued={() => setScreen("player")} />
         ) : screen === "equalizer" ? (
-          <EqualizerScreen audioSessionId={null} />
+          <EqualizerScreen audioSessionId={audioSessionId} />
         ) : (
           <SettingsScreen />
         )}

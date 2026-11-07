@@ -1,4 +1,4 @@
-import TrackPlayer, { useActiveTrack, usePlaybackState, useProgress, State } from "react-native-track-player";
+import TrackPlayer, { Event, RepeatMode, State, useActiveTrack, usePlaybackState, useProgress } from "react-native-track-player";
 import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
@@ -7,12 +7,15 @@ import Slider from "@react-native-community/slider";
 import {
   ImageBackground,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   View,
 } from "react-native";
+import { useEffect, useState } from "react";
 
 import { appConfig } from "../../shared/config/appConfig";
+import { getQueueShuffleEnabled, setQueueShuffle } from "./queueTrack";
 
 interface PlayerScreenProps {
   onOpenEqualizer: () => void;
@@ -24,11 +27,64 @@ function formatTime(seconds: number): string {
 }
 
 export function PlayerScreen({ onOpenEqualizer }: PlayerScreenProps) {
+  const [queue, setQueue] = useState<Awaited<ReturnType<typeof TrackPlayer.getQueue>>>([]);
+  const [activeQueueIndex, setActiveQueueIndex] = useState<number | undefined>();
+  const [queueVisible, setQueueVisible] = useState(false);
+  const [repeatMode, setRepeatMode] = useState<RepeatMode>(RepeatMode.Off);
+  const [shuffleEnabled, setShuffleEnabled] = useState(getQueueShuffleEnabled);
   const track = useActiveTrack();
   const playback = usePlaybackState();
   const progress = useProgress(500);
   const isPlaying = playback.state === State.Playing;
   const coverUrl = track?.artwork;
+
+  useEffect(() => {
+    let active = true;
+    const refreshQueue = () => {
+      void Promise.all([TrackPlayer.getQueue(), TrackPlayer.getActiveTrackIndex()]).then(
+        ([nextQueue, nextActiveIndex]) => {
+          if (!active) return;
+          setQueue(nextQueue);
+          setActiveQueueIndex(nextActiveIndex);
+        },
+      );
+    };
+
+    refreshQueue();
+    void TrackPlayer.getRepeatMode().then(setRepeatMode);
+    const subscription = TrackPlayer.addEventListener(
+      Event.PlaybackActiveTrackChanged,
+      refreshQueue,
+    );
+    return () => {
+      active = false;
+      subscription.remove();
+    };
+  }, []);
+
+  async function removeQueueItem(index: number) {
+    await TrackPlayer.remove(index);
+    const nextQueue = await TrackPlayer.getQueue();
+    const nextActiveIndex = await TrackPlayer.getActiveTrackIndex();
+    setQueue(nextQueue);
+    setActiveQueueIndex(nextActiveIndex);
+  }
+
+  async function cycleRepeatMode() {
+    const nextMode =
+      repeatMode === RepeatMode.Off
+        ? RepeatMode.Queue
+        : repeatMode === RepeatMode.Queue
+          ? RepeatMode.Track
+          : RepeatMode.Off;
+    await TrackPlayer.setRepeatMode(nextMode);
+    setRepeatMode(nextMode);
+  }
+
+  async function toggleShuffle() {
+    const enabled = await setQueueShuffle(!shuffleEnabled);
+    setShuffleEnabled(enabled);
+  }
 
   return (
     <View style={styles.root}>
@@ -103,6 +159,72 @@ export function PlayerScreen({ onOpenEqualizer }: PlayerScreenProps) {
               <Ionicons name="play-skip-forward" size={26} color="#f2ffff" />
             </Pressable>
           </View>
+          <View style={styles.modeControls}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Repeat ${repeatMode === RepeatMode.Off ? "off" : repeatMode === RepeatMode.Queue ? "queue" : "track"}`}
+              onPress={() => void cycleRepeatMode()}
+              style={styles.modeButton}
+            >
+              <Ionicons
+                name={repeatMode === RepeatMode.Track ? "repeat" : "repeat-outline"}
+                size={18}
+                color={repeatMode === RepeatMode.Off ? "#8b9b9f" : appConfig.primaryColor}
+              />
+              <Text style={[styles.modeLabel, repeatMode !== RepeatMode.Off && styles.modeLabelActive]}>
+                {repeatMode === RepeatMode.Off ? "Repeat off" : repeatMode === RepeatMode.Queue ? "Repeat all" : "Repeat one"}
+              </Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityState={{ selected: shuffleEnabled }}
+              onPress={() => void toggleShuffle()}
+              style={styles.modeButton}
+            >
+              <Ionicons name="shuffle" size={18} color={shuffleEnabled ? appConfig.primaryColor : "#8b9b9f"} />
+              <Text style={[styles.modeLabel, shuffleEnabled && styles.modeLabelActive]}>Shuffle</Text>
+            </Pressable>
+          </View>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityState={{ expanded: queueVisible }}
+            onPress={() => setQueueVisible((visible) => !visible)}
+            style={styles.queueToggle}
+          >
+            <Ionicons name="list-outline" size={16} color={appConfig.primaryColor} />
+            <Text style={styles.queueToggleText}>Очередь · {queue.length}</Text>
+            <Ionicons name={queueVisible ? "chevron-up" : "chevron-down"} size={15} color="#a9b9bd" />
+          </Pressable>
+          {queueVisible ? (
+            <ScrollView style={styles.queueList} nestedScrollEnabled>
+              {queue.length === 0 ? (
+                <Text style={styles.queueEmpty}>Очередь пуста. Добавьте трек во вкладке «Импорт».</Text>
+              ) : (
+                queue.map((item, index) => (
+                  <View key={`${item.id ?? item.url}:${index}`} style={styles.queueItem}>
+                    <Pressable
+                      accessibilityRole="button"
+                      onPress={() => void TrackPlayer.skip(index)}
+                      style={styles.queueTrackButton}
+                    >
+                      <Text numberOfLines={1} style={[styles.queueTrackTitle, index === activeQueueIndex && styles.queueTrackActive]}>
+                        {item.title ?? "Unknown track"}
+                      </Text>
+                      <Text numberOfLines={1} style={styles.queueTrackArtist}>{item.artist ?? ""}</Text>
+                    </Pressable>
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={`Remove ${item.title ?? "track"} from queue`}
+                      onPress={() => void removeQueueItem(index)}
+                      style={styles.removeQueueButton}
+                    >
+                      <Ionicons name="close" size={17} color="#a9b9bd" />
+                    </Pressable>
+                  </View>
+                ))
+              )}
+            </ScrollView>
+          ) : null}
         </BlurView>
       </View>
     </View>
@@ -128,4 +250,18 @@ const styles = StyleSheet.create({
   controls: { flexDirection: "row", justifyContent: "center", alignItems: "center", gap: 28, marginTop: 18 },
   transportButton: { width: 48, height: 48, alignItems: "center", justifyContent: "center" },
   playButton: { width: 62, height: 62, alignItems: "center", justifyContent: "center", borderRadius: 31, backgroundColor: appConfig.primaryColor },
+  modeControls: { flexDirection: "row", justifyContent: "space-between", marginTop: 6 },
+  modeButton: { flexDirection: "row", alignItems: "center", gap: 7, minHeight: 34, paddingHorizontal: 5 },
+  modeLabel: { color: "#9baeb3", fontSize: 11, fontWeight: "600" },
+  modeLabelActive: { color: appConfig.primaryColor },
+  queueToggle: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 7, minHeight: 40, marginTop: 10, borderTopColor: "rgba(230,250,250,0.12)", borderTopWidth: 1 },
+  queueToggleText: { color: "#d2dfe1", fontSize: 12, fontWeight: "600" },
+  queueList: { maxHeight: 144, borderTopColor: "rgba(230,250,250,0.1)", borderTopWidth: 1 },
+  queueEmpty: { color: "#91a3a8", fontSize: 12, paddingVertical: 12, textAlign: "center" },
+  queueItem: { flexDirection: "row", alignItems: "center", minHeight: 48, borderBottomColor: "rgba(230,250,250,0.08)", borderBottomWidth: 1 },
+  queueTrackButton: { flex: 1, minWidth: 0, paddingVertical: 7 },
+  queueTrackTitle: { color: "#e5eeee", fontSize: 12, fontWeight: "600" },
+  queueTrackActive: { color: appConfig.primaryColor },
+  queueTrackArtist: { color: "#8fa0a5", fontSize: 10, marginTop: 3 },
+  removeQueueButton: { width: 34, height: 40, alignItems: "center", justifyContent: "center" },
 });
