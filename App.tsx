@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { Ionicons } from "@expo/vector-icons";
 import TrackPlayer, { Event } from "react-native-track-player";
@@ -10,14 +10,18 @@ import { setupPlayer } from "./src/features/player/playerEngine";
 import { EqualizerScreen } from "./src/features/equalizer/EqualizerScreen";
 import { ImportScreen } from "./src/screens/ImportScreen";
 import { SettingsScreen } from "./src/screens/SettingsScreen";
+import { SearchScreen } from "./src/screens/SearchScreen";
+import { LibraryScreen } from "./src/screens/LibraryScreen";
 import { appConfig } from "./src/shared/config/appConfig";
 
 TrackPlayer.registerPlaybackService(() => playbackService);
 
-type ScreenName = "player" | "import" | "equalizer" | "settings";
+type ScreenName = "player" | "search" | "library" | "import" | "equalizer" | "settings";
 
 const tabs: Array<{ key: ScreenName; label: string; icon: keyof typeof Ionicons.glyphMap }> = [
   { key: "player", label: "Плеер", icon: "musical-notes-outline" },
+  { key: "search", label: "Поиск", icon: "search-outline" },
+  { key: "library", label: "Библиотека", icon: "library-outline" },
   { key: "import", label: "Импорт", icon: "add-circle-outline" },
   { key: "equalizer", label: "Эквалайзер", icon: "options-outline" },
   { key: "settings", label: "Настройки", icon: "settings-outline" },
@@ -111,6 +115,10 @@ export default function App() {
       <View style={styles.screen}>
         {screen === "player" ? (
           <PlayerScreen onOpenEqualizer={() => setScreen("equalizer")} />
+        ) : screen === "search" ? (
+          <SearchScreen onTrackQueued={() => setScreen("player")} />
+        ) : screen === "library" ? (
+          <LibraryScreen onTrackQueued={() => setScreen("player")} />
         ) : screen === "import" ? (
           <ImportScreen onTrackQueued={() => setScreen("player")} />
         ) : screen === "equalizer" ? (
@@ -119,7 +127,7 @@ export default function App() {
           <SettingsScreen />
         )}
       </View>
-      <View style={styles.tabBar}>
+      <ScrollView horizontal style={styles.tabBar} contentContainerStyle={styles.tabBarContent} showsHorizontalScrollIndicator={false}>
         {tabs.map((tab) => {
           const selected = screen === tab.key;
           return (
@@ -135,7 +143,7 @@ export default function App() {
             </Pressable>
           );
         })}
-      </View>
+      </ScrollView>
     </View>
   );
 }
@@ -149,8 +157,9 @@ const styles = StyleSheet.create({
   errorMessage: { color: "#ff8bab", fontSize: 13, textAlign: "center" },
   retryButton: { paddingHorizontal: 20, paddingVertical: 12, borderRadius: 6, backgroundColor: appConfig.primaryColor },
   retryText: { color: "#071014", fontWeight: "700" },
-  tabBar: { flexDirection: "row", minHeight: 62, paddingBottom: 5, borderTopColor: "rgba(220,245,247,0.12)", borderTopWidth: 1, backgroundColor: "#0b1519" },
-  tab: { flex: 1, alignItems: "center", justifyContent: "center", gap: 3 },
+  tabBar: { flexGrow: 0, minHeight: 62, borderTopColor: "rgba(220,245,247,0.12)", borderTopWidth: 1, backgroundColor: "#0b1519" },
+  tabBarContent: { flexDirection: "row", minHeight: 62, paddingBottom: 5 },
+  tab: { width: 76, alignItems: "center", justifyContent: "center", gap: 3 },
   tabLabel: { color: "#8b9b9f", fontSize: 10 },
   tabLabelSelected: { color: appConfig.primaryColor, fontWeight: "700" },
 });

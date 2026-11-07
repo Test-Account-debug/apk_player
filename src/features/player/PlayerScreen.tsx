@@ -16,6 +16,7 @@ import { useEffect, useState } from "react";
 
 import { appConfig } from "../../shared/config/appConfig";
 import { getQueueShuffleEnabled, setQueueShuffle } from "./queueTrack";
+import { LyricsPanel } from "../lyrics/LyricsPanel";
 
 interface PlayerScreenProps {
   onOpenEqualizer: () => void;
@@ -30,6 +31,7 @@ export function PlayerScreen({ onOpenEqualizer }: PlayerScreenProps) {
   const [queue, setQueue] = useState<Awaited<ReturnType<typeof TrackPlayer.getQueue>>>([]);
   const [activeQueueIndex, setActiveQueueIndex] = useState<number | undefined>();
   const [queueVisible, setQueueVisible] = useState(false);
+  const [lyricsVisible, setLyricsVisible] = useState(false);
   const [repeatMode, setRepeatMode] = useState<RepeatMode>(RepeatMode.Off);
   const [shuffleEnabled, setShuffleEnabled] = useState(getQueueShuffleEnabled);
   const track = useActiveTrack();
@@ -105,14 +107,25 @@ export function PlayerScreen({ onOpenEqualizer }: PlayerScreenProps) {
           <Text style={styles.brand}>{appConfig.appName}</Text>
           <Ionicons name="open-outline" size={16} color={appConfig.primaryColor} />
         </Pressable>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Open equalizer"
-          onPress={onOpenEqualizer}
-          style={styles.iconButton}
-        >
-          <Ionicons name="options-outline" size={22} color="#e9f5f5" />
-        </Pressable>
+        <View style={styles.headerActions}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={lyricsVisible ? "Hide lyrics" : "Show lyrics"}
+            accessibilityState={{ selected: lyricsVisible }}
+            onPress={() => setLyricsVisible((visible) => !visible)}
+            style={styles.iconButton}
+          >
+            <Ionicons name="reader-outline" size={20} color={lyricsVisible ? appConfig.primaryColor : "#e9f5f5"} />
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Open equalizer"
+            onPress={onOpenEqualizer}
+            style={styles.iconButton}
+          >
+            <Ionicons name="options-outline" size={22} color="#e9f5f5" />
+          </Pressable>
+        </View>
       </View>
 
       <View style={styles.content}>
@@ -226,6 +239,16 @@ export function PlayerScreen({ onOpenEqualizer }: PlayerScreenProps) {
             </ScrollView>
           ) : null}
         </BlurView>
+        <LyricsPanel
+          visible={lyricsVisible}
+          position={progress.position}
+          track={track ? {
+            title: track.title,
+            artist: track.artist,
+            album: track.album,
+            duration: track.duration,
+          } : null}
+        />
       </View>
     </View>
   );
@@ -234,6 +257,7 @@ export function PlayerScreen({ onOpenEqualizer }: PlayerScreenProps) {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: "#071014", paddingHorizontal: 22, paddingTop: 54, paddingBottom: 30 },
   header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  headerActions: { flexDirection: "row", alignItems: "center", gap: 5 },
   brandButton: { flexDirection: "row", alignItems: "center", gap: 8, minHeight: 44 },
   brand: { color: "#f1ffff", fontSize: 17, fontWeight: "800", letterSpacing: 0 },
   iconButton: { width: 44, height: 44, alignItems: "center", justifyContent: "center", borderRadius: 22, backgroundColor: "rgba(255,255,255,0.08)" },

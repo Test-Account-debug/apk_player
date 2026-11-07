@@ -28,9 +28,11 @@ registerRootComponent(App);
 
 Call `setupPlayer()` from `src/features/player/playerEngine.ts` before adding tracks. Add tracks with `TrackPlayer.add(...)`; `PlayerScreen` reads the active queue item and playback progress from Track Player.
 
-The Import tab accepts supported platform share links and imports audio files from device storage using Android's system picker. Local files are queued directly. Imported catalog tracks are searched in Jamendo and can be queued only when a close Creative Commons match exists. Set a registered Jamendo `client_id` in `appConfig.jamendoClientId` to enable that licensed catalog adapter; metadata from the source service alone does not grant playback rights.
+The Import tab accepts supported platform share links and imports audio files from device storage using Android's system picker. Selected files are copied to the app documents directory and remain available to the local library. Imported catalog tracks are searched in Jamendo and can be queued only when a Creative Commons licensed result is available. Set a registered Jamendo `client_id` in `appConfig.jamendoClientId`; metadata from the source service alone does not grant playback rights.
 
-The player queue supports removing and selecting items, repeat off/all/one, and shuffle of upcoming items with restoration of the previous order. Speed, pitch, reverb, lyrics, saved playlists, offline caching, and discovery views are not implemented yet.
+The player queue supports removing and selecting items, repeat off/all/one, and shuffle of upcoming items with restoration of the previous order. Search currently covers Jamendo tracks; favorites and user playlists are stored locally in AsyncStorage. LRCLIB provides plain and timestamped lyrics for the active track. Speed, pitch, reverb, offline audio cache management, artist/album pages, and discovery mixes are not implemented yet.
+
+Run the focused unit tests with `pnpm test`. They cover library model invariants and synced lyric timestamp parsing.
 
 ### Platform adapters
 

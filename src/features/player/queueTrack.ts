@@ -3,11 +3,17 @@ import TrackPlayer from "react-native-track-player";
 import { resolveJamendoTrack } from "../audio-donor/jamendoResolver";
 import type { UniversalTrack } from "../../shared/types/UniversalTrack";
 
+interface LicensedStreamTrack extends UniversalTrack {
+  audioUrl: string;
+}
+
 interface LocalAudioFile {
   id: string;
   url: string;
   title: string;
 }
+
+export type { LocalAudioFile };
 
 let unshuffledQueueIds: string[] | null = null;
 
@@ -36,14 +42,18 @@ export async function queueTrackFromLicensedCatalog(
   jamendoClientId: string,
 ): Promise<void> {
   const licensedTrack = await resolveJamendoTrack(track, jamendoClientId);
+  await addAndPlayLicensedTrack(licensedTrack);
+}
+
+export async function addAndPlayLicensedTrack(track: LicensedStreamTrack): Promise<void> {
   const queueItem = {
-    id: `${licensedTrack.sourcePlatform}-${licensedTrack.id}-${Date.now()}`,
-    url: licensedTrack.audioUrl,
-    title: licensedTrack.title,
-    artist: licensedTrack.artist,
-    album: licensedTrack.album,
-    artwork: licensedTrack.coverUrl || undefined,
-    duration: licensedTrack.duration,
+    id: `${track.sourcePlatform}-${track.id}-${Date.now()}`,
+    url: track.audioUrl,
+    title: track.title,
+    artist: track.artist,
+    album: track.album,
+    artwork: track.coverUrl || undefined,
+    duration: track.duration,
   };
   const firstIndex = (await TrackPlayer.getQueue()).length;
   const addedIndex = await TrackPlayer.add(queueItem);

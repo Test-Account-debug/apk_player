@@ -9,6 +9,7 @@
     "prebuild": "expo prebuild",
     "run:android": "expo run:android",
     "typecheck": "tsc --noEmit",
+    "test": "vitest run",
     "android": "expo run:android",
     "ios": "expo run:ios"
   },
@@ -21,12 +22,14 @@
   },
   "dependencies": {
     "@expo/vector-icons": "^14.0.4",
+    "@react-native-async-storage/async-storage": "1.23.1",
     "@react-native-community/slider": "4.5.5",
     "expo": "~52.0.0",
     "expo-auth-session": "~6.0.3",
     "expo-blur": "~14.0.3",
     "expo-dev-client": "~5.0.8",
     "expo-document-picker": "~13.0.3",
+    "expo-file-system": "~18.0.12",
     "expo-linear-gradient": "~14.0.2",
     "expo-modules-core": "~2.2.3",
     "expo-secure-store": "~14.0.1",
@@ -40,7 +43,8 @@
   },
   "devDependencies": {
     "@types/react": "~18.3.12",
-    "typescript": "~5.3.3"
+    "typescript": "~5.3.3",
+    "vitest": "^5.1.0"
   },
   "pnpm": {
     "patchedDependencies": {

@@ -6,7 +6,8 @@ export type SourcePlatform =
   | "deezer"
   | "soundcloud"
   | "tidal"
-  | "jamendo";
+  | "jamendo"
+  | "local";
 
 export interface UniversalTrack {
   id: string;
@@ -17,4 +18,5 @@ export interface UniversalTrack {
   /** Track duration in seconds. */
   duration: number;
   sourcePlatform: SourcePlatform;
+  localUri?: string;
 }

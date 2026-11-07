@@ -20,6 +20,8 @@ import { useSpotifyAuth } from "../features/import/spotify/useSpotifyAuth";
 import { parseTidalLink } from "../features/import/tidal/tidalParser";
 import { parseYandexMusicLink } from "../features/import/yandex/yandexParser";
 import { queueLocalAudioFiles, queueTrackFromLicensedCatalog } from "../features/player/queueTrack";
+import { persistAudioFiles } from "../features/player/localAudioStorage";
+import { saveLibraryTrack } from "../features/library/libraryStore";
 import { appConfig } from "../shared/config/appConfig";
 import { getUserToken, type SecureTokenProvider } from "../shared/config/secureStorage";
 import type { UniversalTrack } from "../shared/types/UniversalTrack";
@@ -136,15 +138,23 @@ export function ImportScreen({ onTrackQueued }: ImportScreenProps) {
       });
       if (selection.canceled) return;
 
-      const addedAt = Date.now();
-      const localTracks = selection.assets.map((asset, index) => ({
-        id: `local-${addedAt}-${index}`,
-        url: asset.uri,
-        title: asset.name.replace(/\.[^.]+$/, "") || asset.name,
-      }));
+      const localTracks = await persistAudioFiles(selection.assets.map((asset) => ({
+        name: asset.name,
+        uri: asset.uri,
+      })));
       if (localTracks.length === 0) return;
+      await Promise.all(localTracks.map((file) => saveLibraryTrack({
+        id: file.id,
+        title: file.title,
+        artist: "Локальный файл",
+        album: "На устройстве",
+        coverUrl: "",
+        duration: 0,
+        sourcePlatform: "local",
+        localUri: file.url,
+      })));
       await queueLocalAudioFiles(localTracks);
-      setNotice(`Добавлено файлов: ${localTracks.length}`);
+      setNotice(`Импортировано и добавлено файлов: ${localTracks.length}`);
       onTrackQueued();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Не удалось импортировать аудиофайлы");

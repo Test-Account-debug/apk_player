@@ -6,7 +6,7 @@ index 1b5bf6f9bba6b898e686c141e23e8048cb8332ec..8c61a99293cea2635ecc702146058aac
  
  # Ignore "not found" errors for libraries
  -dontwarn com.google.android.exoplayer2.**
-+-keepclassmembers class com.doublesymmetry.kotlinaudio.players.BaseAudioPlayer {
++-keep class com.doublesymmetry.kotlinaudio.players.BaseAudioPlayer {
 +	<fields>;
 +}
 diff --git a/android/src/main/java/com/doublesymmetry/trackplayer/module/MusicModule.kt b/android/src/main/java/com/doublesymmetry/trackplayer/module/MusicModule.kt
